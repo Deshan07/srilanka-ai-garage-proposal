@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import hashlib
+import time
 
 # Page Configuration
 st.set_page_config(
@@ -8,26 +10,40 @@ st.set_page_config(
     layout="centered"
 )
 
+# --- Security Helper Functions ---
+def hash_password(password):
+    """මුරපදය SHA-256 මඟින් Encrypt කරයි"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def check_password(password, hashed):
+    """ඇතුළත් කළ මුරපදය සහ Hash එක සමාන දැයි පරීක්ෂා කරයි"""
+    return hash_password(password) == hashed
+
 # --- Global Session State Initialization ---
 if "logged_in_user" not in st.session_state:
     st.session_state.logged_in_user = None
 
-# Users database structure
+# Login attempt tracker for security (Brute-force protection)
+if "login_attempts" not in st.session_state:
+    st.session_state.login_attempts = {}
+
+if "lockout_time" not in st.session_state:
+    st.session_state.lockout_time = {}
+
+# Users database structure (Admin ගිණුමේ මුරපදය ද Hash කර සේවා කර ඇත)
 if "users_db" not in st.session_state:
     st.session_state.users_db = {
         "admin_boss": {
-            "password": "supersecretpassword123", 
+            "password": hash_password("supersecretpassword123"), 
             "vehicles": ["ADMIN-CAR"], 
             "expenses": []
         }
     }
 
 # Determine current step based on login status
-# පරිශීලකයා දැනටමත් ලොග් වී ඇත්නම්, App එක විවෘත කළ වහාම කෙළින්ම Dashboard වෙත යයි.
 if st.session_state.logged_in_user is not None:
     current_step = "app_dashboard"
 else:
-    # පරිශීලකයා ලොග් වී නැත්නම්, පළමුව Proposal එකට හෝ Auth වෙත යනු ඇත (පෙරනිමියෙන් 'proposal' ලෙස පවත්වා ගනිමු)
     if "step" not in st.session_state:
         st.session_state.step = "proposal"
     current_step = st.session_state.step
@@ -64,15 +80,15 @@ if current_step == "proposal":
         st.rerun()
 
 # ==========================================
-# STEP 2: USER AUTHENTICATION (Login / Sign Up)
+# STEP 2: SECURE USER AUTHENTICATION
 # ==========================================
 elif current_step == "auth":
     if st.button("⬅️ Back to Project Proposal"):
         st.session_state.step = "proposal"
         st.rerun()
 
-    st.title("🔐 පරිශීලක ගිණුම (User Account)")
-    st.markdown("ඔබගේ වාහන දත්ත සුරක්ෂිතව තබා ගැනීමට කරුණාකර ලොග් වන්න හෝ අලුත් ගිණුමක් සාදා ගන්න.")
+    st.title("🔐 ආරක්ෂිත පරිශීලක ගිණුම (Secure User Account)")
+    st.markdown("ඔබගේ වාහන දත්ත ඉහළම ආරක්ෂාව යටතේ තබා ගැනීමට කරුණාකර ලොග් වන්න.")
     
     auth_tab1, auth_tab2 = st.tabs(["🔑 ලොග් වීම (Login)", "📝 ගිණුමක් තැනීම (Sign Up)"])
     
@@ -84,15 +100,39 @@ elif current_step == "auth":
             login_btn = st.form_submit_button("ලොග් වන්න (Login)")
             
             if login_btn:
-                if login_user in st.session_state.users_db and st.session_state.users_db[login_user]["password"] == login_pass:
+                # Check for lockout
+                current_time = time.time()
+                if login_user in st.session_state.lockout_time:
+                    remaining_lock = st.session_state.lockout_time[login_user] - current_time
+                    if remaining_lock > 0:
+                        st.error(f"🚫 ආරක්ෂක හේතු මත මෙම ගිණුම තාවකාලිකව අගුළු දමා ඇත. කරුණාකර තවත් තත්පර {int(remaining_lock)}කින් උත්සාහ කරන්න.")
+                        st.stop()
+                    else:
+                        del st.session_state.lockout_time[login_user]
+                        st.session_state.login_attempts[login_user] = 0
+
+                if login_user in st.session_state.users_db and check_password(login_pass, st.session_state.users_db[login_user]["password"]):
+                    # Reset attempts on successful login
+                    st.session_state.login_attempts[login_user] = 0
                     st.session_state.logged_in_user = login_user
                     st.success(f"සාර්ථකයි! සාදරයෙන් පිළිගනිමු, {login_user}!")
                     st.rerun()
                 else:
-                    st.error("❌ වැරදි පරිශීලක නමක් හෝ මුරපදයකි. කරුණාකර පරීක්ෂා කරන්න.")
+                    # Track failed attempts
+                    if login_user not in st.session_state.login_attempts:
+                        st.session_state.login_attempts[login_user] = 0
+                    st.session_state.login_attempts[login_user] += 1
+                    
+                    attempts_left = 3 - st.session_state.login_attempts[login_user]
+                    if attempts_left > 0:
+                        st.error(f"❌ වැරදි පරිශීලක නමක් හෝ මුරපදයකි. ඔබට ඉතිරිව ඇත්තේ උත්සාහයන් {attempts_left} කි.")
+                    else:
+                        st.session_state.lockout_time[login_user] = time.time() + 30  # Lock for 30 seconds
+                        st.error("🚫 වැරදි මුරපද වාර ගණන ඉක්මවා ඇත! ආරක්ෂාව සඳහා ගිණුම තත්පර 30කට අගුළු දමන ලදී.")
 
     with auth_tab2:
         st.subheader("නව ගිණුමක් සාදාගන්න")
+        st.info("💡 **ආරක්ෂක නීති:** මුරපදය අවම වශයෙන් අක්ෂර 8ක්වත් දිග විය යුතු අතර, අංක සහ අකුරු අඩංගු විය යුතුය.")
         with st.form("signup_form"):
             new_user = st.text_input("නව පරිශීලක නමක් (Username):").strip()
             new_pass = st.text_input("මුරපදයක් (Password):", type="password")
@@ -101,15 +141,18 @@ elif current_step == "auth":
             if signup_btn:
                 if new_user == "" or new_pass == "":
                     st.warning("⚠️ කරුණාකර නම සහ මුරපදය ඇතුළත් කරන්න.")
+                elif len(new_pass) < 8:
+                    st.warning("⚠️ මුරපදය ඉතා කෙටි වේ. කරුණාකර අවම වශයෙන් අක්ෂර 8ක්වත් යොදන්න.")
                 elif new_user in st.session_state.users_db:
                     st.warning("⚠️ මෙම පරිශීලක නම දැනටමත් භාවිතා කර ඇත. වෙනත් නමක් තෝරන්න.")
                 else:
+                    # Save with Hashed Password
                     st.session_state.users_db[new_user] = {
-                        "password": new_pass,
+                        "password": hash_password(new_pass),
                         "vehicles": [],
                         "expenses": []
                     }
-                    st.success("✅ ගිණුම සාර්ථකව සාදන ලදී! දැන් 'Login' ටැබ් එකට ගොස් ලොග් වන්න.")
+                    st.success("✅ ගිණුම ආරක්ෂිතව සාදන ලදී! දැන් 'Login' ටැබ් එකට ගොස් ලොග් වන්න.")
 
 # ==========================================
 # STEP 3: MAIN APP MANAGEMENT PORTAL
@@ -140,7 +183,7 @@ elif current_step == "app_dashboard":
             if selected_target_user:
                 t_info = st.session_state.users_db[selected_target_user]
                 st.markdown(f"### 👤 පරිශීලකයා: `{selected_target_user}`")
-                st.write(f"🔑 **මුරපදය:** `{t_info['password']}`")
+                st.write(f"🔑 **මුරපද Hash එක (ආරක්ෂිතව සේව් වී ඇත):** `{t_info['password'][:15]}...`")
                 st.write(f"🚗 **ලියාපදිංචි වාහන:** {t_info['vehicles']}")
                 
                 if len(t_info['expenses']) > 0:
