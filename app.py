@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import re
 
 # Page Configuration
 st.set_page_config(
@@ -25,47 +25,36 @@ if st.session_state.step == "proposal":
     st.markdown("අපගේ ව්‍යාපෘතියේ ව්‍යාපාරික යෝජනාව (Proposal) පහත දැක්වේ. විස්තර බැලීමට මාතෘකා මත ක්ලික් කරන්න:")
     st.markdown("---")
     
-    # Folder / Expander 1: Introduction
     with st.expander("📌 1. හැඳින්වීම (Introduction)", expanded=True):
         st.write(
             "**Sri Lanka AI Garage** යනු ශ්‍රී ලංකාවේ වාහන හිමිකරුවන්ට තම වාහනවල ඉන්ධන පරිභෝජනය, "
-            "නඩත්තු වියදම් සහ සේවා කාලසටහන් පහසුවෙන් කළමනාකරණය කරගැනීමට සහය වන ඩිජිටල් වේදිකාවකි. "
-            "මෙය නවීන කෘත්‍රිම බුද්ධිය (AI) සහ දත්ත විශ්ලේෂණ තාක්ෂණය භාවිතයෙන් සකස් කරන ලද්දකි."
+            "නඩත්තු වියදම් සහ සේවා කාලසටහන් පහසුවෙන් කළමනාකරණය කරගැනීමට සහය වන ඩිජිටල් වේදිකාවකි."
         )
     
-    # Folder / Expander 2: Objectives
     with st.expander("🎯 2. ව්‍යාපෘතියේ අරමුණු (Objectives)"):
         st.markdown("""
         * 🚗 වාහන නඩත්තු වියදම් නිවැරදිව වාර්තා කරගැනීම සහ විශ්ලේෂණය කිරීම.
         * ⛽ ඉන්ධන කාර්යක්ෂමතාව (Fuel Efficiency) පාලනය කරගැනීම.
-        * 📉 අනපේක්ෂිත අලුත්වැඩියා වියදම් අවම කරගැනීම සඳහා පූර්ව දැනුම්දීම් ලබා දීම.
-        * 🌐 ශ්‍රී ලංකේය වාහන ප්‍රජාව සඳහා ඩිජිටල් ප්‍රජා මධ්‍යස්ථානයක් (Community Hub) නිර්මාණය කිරීම.
+        * 📉 අනපේක්ෂිත අලුත්වැඩියා වියදම් අවම කරගැනීම.
         """)
 
-    # Folder / Expander 3: Expected Benefits
     with st.expander("💡 3. අපේක්ෂිත ප්‍රතිලාභ (Expected Benefits)"):
         st.info("**මූල්‍ය පාලනය:** මාසිකව වාහනය සඳහා වැයවන මුදල් පිළිබඳ පැහැදිලි චිත්‍රයක් ලබා ගැනීම.")
-        st.info("**කාලය ඉතිරිකිරීම:** සේවා කළ යුතු දින සහ බලපත්‍ර අලුත් කළ යුතු දින කලින්ම දැන ගැනීම.")
-        st.info("**විනිවිදභාවය:** සියලුම වාහන දත්ත එකම තැනක සුරක්ෂිතව තබා ගැනීම.")
+        st.info("**කාලය ඉතිරිකිරීම:** සේවා කළ යුතු දින කලින්ම දැන ගැනීම.")
 
-    # Folder / Expander 4: Contact & Social Media
-    with st.expander("🌐 4. සම්බන්ධ වීමට සහ අනුග්‍රහය දැක්වීමට (Contact & Sponsorship)"):
-        st.write("මෙම ව්‍යාපෘතිය හා සම්බන්ධ වීමට හෝ වැඩි විස්තර දැනගැනීමට අපගේ නිල ෆේස්බුක් පිටුව වෙත පිවිසෙන්න:")
+    with st.expander("🌐 4. සම්බන්ධ වීමට (Contact & Sponsorship)"):
         facebook_link = "https://www.facebook.com/share/1CmkuWayeL/"
         st.markdown(f"👉 **[Sri Lanka AI Garage Facebook Page වෙත පිවිසෙන්න]({facebook_link})**", unsafe_allow_html=True)
 
     st.markdown("---")
-    
-    # Next Button to go to the App
     if st.button("Next ➡️ (Go to Vehicle App Dashboard)", use_container_width=True, type="primary"):
         st.session_state.step = "app"
         st.rerun()
 
 # ==========================================
-# STEP 2: APP MANAGEMENT PORTAL (Center Flow)
+# STEP 2: APP MANAGEMENT PORTAL
 # ==========================================
 elif st.session_state.step == "app":
-    # Back button to return to Proposal
     if st.button("⬅️ Back to Project Proposal"):
         st.session_state.step = "proposal"
         st.rerun()
@@ -73,20 +62,25 @@ elif st.session_state.step == "app":
     st.title("🚗 Sri Lanka AI Garage: Management Portal")
     st.markdown("---")
 
-    # 1. Add Vehicle Section
-    st.subheader("🚗 1. වාහනයක් ලියාපදිංචි කිරීම / තෝරා ගැනීම")
+    st.subheader("🚗 1. වාහනයක් ලියාපදිංචි කිරීම")
+    st.caption("ℹ️ සටහන: ශ්‍රී ලංකා රජයේ RMV පද්ධතියට සෘජු ප්‍රවේශයක් නොමැති නිසා, මෙහිදී වාහන අංකයේ సరైన ආකෘතිය (Format) පරීක්ෂා කරනු ලැබේ.")
     
     with st.form("vehicle_form_center"):
-        v_name = st.text_input("වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
+        v_name = st.text_input("වාහන අංකය (උදා: WP CAB-1234 හෝ CAA-5678):").upper()
         v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
         add_submitted = st.form_submit_button("වාහනය එකතු කරන්න")
         
         if add_submitted and v_name.strip() != "":
-            if v_name not in st.session_state.vehicles:
-                st.session_state.vehicles.append(v_name)
-                st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී!")
+            # Sri Lankan vehicle number pattern check (e.g., 2-3 letters followed by numbers or provincial formats)
+            # Basic check: should be at least 4 characters and contain alphanumeric characters
+            if len(v_name.strip()) >= 4:
+                if v_name not in st.session_state.vehicles:
+                    st.session_state.vehicles.append(v_name)
+                    st.success(f"'{v_name}' වාහනය සාර්ථකව තහවුරු කර එකතු කරන ලදී!")
+                else:
+                    st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
             else:
-                st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
+                st.error("❌ කාරුණාකර έγκുරුවන (Valid) ශ්‍රී ලංකා වාහන අංකයක් ඇතුළත් කරන්න (උදා: WP CAB-1234).")
 
     # If vehicles exist
     if len(st.session_state.vehicles) > 0:
@@ -102,11 +96,9 @@ elif st.session_state.step == "app":
                 category = st.selectbox("වියදම් වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
                 cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=3000.0)
                 
-                # If fuel is selected, calculate litres automatically based on standard SL fuel prices
                 fuel_info = ""
                 if category == "Fuel":
                     fuel_type = st.selectbox("ඉන්ධන වර්ගය:", ["Petrol 92", "Petrol 95", "Auto Diesel", "Super Diesel"])
-                    # Approximate standard prices per litre in LKR
                     price_dict = {
                         "Petrol 92": 370.0,
                         "Petrol 95": 410.0,
@@ -149,4 +141,4 @@ elif st.session_state.step == "app":
             else:
                 st.info("තවම කිසිදු වියදම් දත්තයක් ඇතුළත් කර නැත.")
     else:
-        st.info("💡 කරුණාකර ඉහත පෝරමයෙන් ඔබගේ පළමු වාහනය එකතු කරන්න.")
+        st.info("💡 කරුණාකර ඉහත පෝරමයෙන් ඔබගේ වාහන අංකය ඇතුළත් කර ලියාපදිංචි කරන්න.")
