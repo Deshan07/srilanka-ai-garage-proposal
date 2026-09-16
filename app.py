@@ -63,35 +63,34 @@ elif st.session_state.step == "app":
     st.markdown("---")
 
     st.subheader("🚗 1. වාහනයක් ලියාපදිංචි කිරීම")
-    st.caption("ℹ️ සටහන: ශ්‍රී ලංකා රජයේ RMV පද්ධතියට සෘජු ප්‍රවේශයක් නොමැති නිසා, මෙහිදී වාහන අංකයේ సరైన ආකෘතිය (Format) පරීක්ෂා කරනු ලැබේ.")
     
     with st.form("vehicle_form_center"):
-        v_name = st.text_input("වාහන අංකය (උදා: WP CAB-1234 හෝ CAA-5678):").upper()
+        v_name = st.text_input("වාහන අංකය (උදා: WP CAB-1234):").upper()
         v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
         add_submitted = st.form_submit_button("වාහනය එකතු කරන්න")
         
         if add_submitted and v_name.strip() != "":
-            # Sri Lankan vehicle number pattern check (e.g., 2-3 letters followed by numbers or provincial formats)
-            # Basic check: should be at least 4 characters and contain alphanumeric characters
             if len(v_name.strip()) >= 4:
                 if v_name not in st.session_state.vehicles:
                     st.session_state.vehicles.append(v_name)
-                    st.success(f"'{v_name}' වාහනය සාර්ථකව තහවුරු කර එකතු කරන ලදී!")
+                    st.success(f"'{v_name}' වාහනය සාර්ථකව එකතු කරන ලදී!")
                 else:
                     st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
             else:
-                st.error("❌ කාරුණාකර έγκുරුවන (Valid) ශ්‍රී ලංකා වාහන අංකයක් ඇතුළත් කරන්න (උදා: WP CAB-1234).")
+                st.error("❌ කාරුණාකර సరైన ශ්‍රී ලංකා වාහන අංකයක් ඇතුළත් කරන්න.")
 
     # If vehicles exist
     if len(st.session_state.vehicles) > 0:
         st.markdown("---")
-        st.subheader("⚙️ 2. වාහනය තෝරා දත්ත ඇතුළත් කිරීම")
-        
+        st.subheader("⚙️ 2. වාහනය තෝරා ගැනීම")
         selected_vehicle = st.selectbox("පාලනය කිරීමට අවශ්‍ය වාහනය තෝරන්න:", st.session_state.vehicles)
+        st.markdown("---")
 
-        action_choice = st.radio("කරන් අවශ්‍ය දේ තෝරන්න:", ["⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)", "📊 වියදම් සාරාංශය බලන්න (Dashboard)"])
+        # Creating top-level Tabs for Add Expense and Dashboard
+        tab1, tab2 = st.tabs(["⛽ වියදම් ඇතුළත් කරන්න (Add Expense)", "📊 වියදම් සාරාංශය (Dashboard)"])
         
-        if action_choice == "⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)":
+        with tab1:
+            st.subheader(f"⛽ {selected_vehicle} - නව වියදමක් එකතු කිරීම")
             with st.form("expense_form_center"):
                 category = st.selectbox("වියදම් වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
                 cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=3000.0)
@@ -125,9 +124,8 @@ elif st.session_state.step == "app":
                     })
                     st.success("දත්ත සාර්ථකව සුරකින ලදී!")
                     
-        elif action_choice == "📊 වියදම් සාරාංශය බලන්න (Dashboard)":
-            st.markdown(f"### 📊 {selected_vehicle} - වියදම් වාර්තාව")
-            
+        with tab2:
+            st.subheader(f"📊 {selected_vehicle} - වියදම් වාර්තාව")
             if len(st.session_state.expenses) > 0:
                 df = pd.DataFrame(st.session_state.expenses)
                 v_df = df[df["Vehicle"] == selected_vehicle]
