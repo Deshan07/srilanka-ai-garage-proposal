@@ -9,30 +9,21 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Header Section ---
-st.title("🚗 Sri Lanka AI Garage: Project Proposal & Management Portal")
-st.markdown("අපගේ ව්‍යාපෘතියේ ව්‍යාපාරික යෝජනාව (Proposal) සහ වාහන කළමනාකරණ පද්ධතිය එකම තැනකින්.")
-st.markdown("---")
-
-# --- Sidebar Menu ---
-st.sidebar.header("📂 නාවික මෙනුව (Navigation)")
-menu = st.sidebar.selectbox(
-    "පිටුව තෝරන්න:", 
-    ["📄 Project Proposal", "📊 Vehicle Expense Dashboard", "➕ Add Vehicle", "⛽ Add Fuel/Service Log"]
-)
-
-# --- Session State for App ---
+# --- Session State for Step Navigation & App Data ---
+if "step" not in st.session_state:
+    st.session_state.step = "proposal"  # "proposal" හෝ "app" විය හැක
 if "vehicles" not in st.session_state:
     st.session_state.vehicles = []
 if "expenses" not in st.session_state:
     st.session_state.expenses = []
 
 # ==========================================
-# 1. PROJECT PROPOSAL SECTION (Interactive Expanders)
+# STEP 1: PROJECT PROPOSAL PAGE
 # ==========================================
-if menu == "📄 Project Proposal":
-    st.header("📋 ව්‍යාපෘති යෝජනාව (Project Proposal)")
-    st.markdown("පහත මාතෘකා මත ක්ලික් කර අදාළ විස්තර බලාගන්න:")
+if st.session_state.step == "proposal":
+    st.title("🚗 Sri Lanka AI Garage: Project Proposal")
+    st.markdown("අපගේ ව්‍යාපෘතියේ ව්‍යාපාරික යෝජනාව (Proposal) පහත දැක්වේ. විස්තර බැලීමට මාතෘකා මත ක්ලික් කරන්න:")
+    st.markdown("---")
     
     # Folder / Expander 1: Introduction
     with st.expander("📌 1. හැඳින්වීම (Introduction)", expanded=True):
@@ -67,67 +58,89 @@ if menu == "📄 Project Proposal":
         facebook_link = "https://www.facebook.com/share/1CmkuWayeL/"
         st.markdown(f"👉 **[Sri Lanka AI Garage Facebook Page වෙත පිවිසෙන්න]({facebook_link})**", unsafe_allow_html=True)
 
+    st.markdown("---")
+    
+    # Next Button to go to the App
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("Next ➡️ (Go to Vehicle App Dashboard)", use_container_width=True, type="primary"):
+            st.session_state.step = "app"
+            st.rerun()
+
 # ==========================================
-# 2. ADD VEHICLE SECTION
+# STEP 2: APP DASHBOARD & MANAGEMENT SECTION
 # ==========================================
-elif menu == "➕ Add Vehicle":
-    st.subheader("🚗 නව වාහනයක් ලියාපදිංචි කිරීම")
-    with st.form("vehicle_form"):
-        v_name = st.text_input("වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
-        v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
-        submitted = st.form_submit_button("වාහනය එකතු කරන්න")
+elif st.session_state.step == "app":
+    # Back button to return to Proposal
+    if st.button("⬅️ Back to Project Proposal"):
+        st.session_state.step = "proposal"
+        st.rerun()
         
-        if submitted and v_name.strip() != "":
-            if v_name not in st.session_state.vehicles:
-                st.session_state.vehicles.append(v_name)
-                st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී!")
-            else:
-                st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
+    st.title("🚗 Sri Lanka AI Garage: Management Portal")
+    st.markdown("---")
 
-# Check if vehicles exist
-if len(st.session_state.vehicles) > 0:
-    selected_vehicle = st.sidebar.selectbox("වාහනය තෝරන්න:", st.session_state.vehicles)
+    # --- Sidebar Menu for App ---
+    st.sidebar.header("📂 ඇප් මෙනුව (App Navigation)")
+    menu = st.sidebar.selectbox(
+        "පිටුව තෝරන්න:", 
+        ["📊 Vehicle Expense Dashboard", "➕ Add Vehicle", "⛽ Add Fuel/Service Log"]
+    )
 
-    # ==========================================
-    # 3. ADD FUEL / EXPENSE LOG
-    # ==========================================
-    if menu == "⛽ Add Fuel/Service Log":
-        st.subheader(f"⛽ {selected_vehicle} - දත්ත ඇතුළත් කිරීම")
-        with st.form("expense_form"):
-            category = st.selectbox("වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
-            cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=2500.0)
-            details = st.text_input("විස්තර:")
-            log_date = st.date_input("දිනය:")
+    # 1. Add Vehicle Section
+    if menu == "➕ Add Vehicle":
+        st.subheader("🚗 නව වාහනයක් ලියාපදිංචි කිරීම")
+        with st.form("vehicle_form"):
+            v_name = st.text_input("වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
+            v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
+            submitted = st.form_submit_button("වාහනය එකතු කරන්න")
             
-            exp_submitted = st.form_submit_button("දත්ත සුරකින්න")
-            if exp_submitted:
-                st.session_state.expenses.append({
-                    "Vehicle": selected_vehicle,
-                    "Category": category,
-                    "Cost (LKR)": cost,
-                    "Details": details,
-                    "Date": str(log_date)
-                })
-                st.success("දත්ත සාර්ථකව සුරකින ලදී!")
+            if submitted and v_name.strip() != "":
+                if v_name not in st.session_state.vehicles:
+                    st.session_state.vehicles.append(v_name)
+                    st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී!")
+                else:
+                    st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
 
-    # ==========================================
-    # 4. DASHBOARD SECTION
-    # ==========================================
-    elif menu == "📊 Vehicle Expense Dashboard":
-        st.subheader(f"📊 {selected_vehicle} - වියදම් සාරාංශය")
-        
-        if len(st.session_state.expenses) > 0:
-            df = pd.DataFrame(st.session_state.expenses)
-            v_df = df[df["Vehicle"] == selected_vehicle]
+    # Check if vehicles exist for other menus
+    if len(st.session_state.vehicles) > 0:
+        selected_vehicle = st.sidebar.selectbox("වාහනය තෝරන්න:", st.session_state.vehicles)
+
+        # 2. Add Fuel / Expense Log
+        if menu == "⛽ Add Fuel/Service Log":
+            st.subheader(f"⛽ {selected_vehicle} - දත්ත ඇතුළත් කිරීම")
+            with st.form("expense_form"):
+                category = st.selectbox("වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
+                cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=2500.0)
+                details = st.text_input("විස්තර:")
+                log_date = st.date_input("දිනය:")
+                
+                exp_submitted = st.form_submit_button("දත්ත සුරකින්න")
+                if exp_submitted:
+                    st.session_state.expenses.append({
+                        "Vehicle": selected_vehicle,
+                        "Category": category,
+                        "Cost (LKR)": cost,
+                        "Details": details,
+                        "Date": str(log_date)
+                    })
+                    st.success("දත්ත සාර්ථකව සුරකින ලදී!")
+
+        # 3. Dashboard Section
+        elif menu == "📊 Vehicle Expense Dashboard":
+            st.subheader(f"📊 {selected_vehicle} - වියදම් සාරාංශය")
             
-            if not v_df.empty:
-                total_spent = v_df["Cost (LKR)"].sum()
-                st.metric(label="මුළු වියදම", value=f"Rs. {total_spent:,.2f}")
-                st.dataframe(v_df, use_container_width=True)
+            if len(st.session_state.expenses) > 0:
+                df = pd.DataFrame(st.session_state.expenses)
+                v_df = df[df["Vehicle"] == selected_vehicle]
+                
+                if not v_df.empty:
+                    total_spent = v_df["Cost (LKR)"].sum()
+                    st.metric(label="මුළු වියදම", value=f"Rs. {total_spent:,.2f}")
+                    st.dataframe(v_df, use_container_width=True)
+                else:
+                    st.info("මෙම වාහනය සඳහා තවම වියදම් ඇතුළත් කර නැත.")
             else:
-                st.info("මෙම වාහනය සඳහා තවම වියදම් ඇතුළත් කර නැත.")
-        else:
-            st.info("තවම කිසිදු දත්තයක් ඇතුළත් කර නැත.")
-else:
-    if menu != "📄 Project Proposal":
-        st.info("⚠️ කරුණාකර පළමුව වම්පස මෙනුවෙන් **'Add Vehicle'** හරහා ඔබේ වාහනයක් එකතු කරගන්න.")
+                st.info("තවම කිසිදු දත්තයක් ඇතුළත් කර නැත.")
+    else:
+        if menu != "➕ Add Vehicle":
+            st.warning("⚠️ කරුණාකර පළමුව වම්පස මෙනුවෙන් **'Add Vehicle'** හරහා ඔබේ වාහනයක් එකතු කරගන්න.")
