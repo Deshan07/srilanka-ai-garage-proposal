@@ -73,11 +73,11 @@ elif st.session_state.step == "app":
     st.title("🚗 Sri Lanka AI Garage: Management Portal")
     st.markdown("---")
 
-    # 1. Add Vehicle Section (Always visible at the top if needed, or managed centrally)
+    # 1. Add Vehicle Section
     st.subheader("🚗 1. වාහනයක් ලියාපදිංචි කිරීම / තෝරා ගැනීම")
     
     with st.form("vehicle_form_center"):
-        v_name = st.text_input("새로운 වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
+        v_name = st.text_input("වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
         v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
         add_submitted = st.form_submit_button("වාහනය එකතු කරන්න")
         
@@ -88,30 +88,47 @@ elif st.session_state.step == "app":
             else:
                 st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
 
-    # If vehicles exist, show selection and management in the center
+    # If vehicles exist
     if len(st.session_state.vehicles) > 0:
         st.markdown("---")
         st.subheader("⚙️ 2. වාහනය තෝරා දත්ත ඇතුළත් කිරීම")
         
         selected_vehicle = st.selectbox("පාලනය කිරීමට අවශ්‍ය වාහනය තෝරන්න:", st.session_state.vehicles)
 
-        # Tabs or sections for actions
-        action_choice = st.radio("කරަން අවශ්‍ය දේ තෝරන්න:", ["⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)", "📊 වියදම් සාරාංශය බලන්න (Dashboard)"])
+        action_choice = st.radio("කරන් අවශ්‍ය දේ තෝරන්න:", ["⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)", "📊 වියදම් සාරාංශය බලන්න (Dashboard)"])
         
         if action_choice == "⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)":
             with st.form("expense_form_center"):
                 category = st.selectbox("වියදම් වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
-                cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=2500.0)
-                details = st.text_input("විස්තර (උදා: ලීටර් 15 / ඔයිල් මාරු කළා):")
+                cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=3000.0)
+                
+                # If fuel is selected, calculate litres automatically based on standard SL fuel prices
+                fuel_info = ""
+                if category == "Fuel":
+                    fuel_type = st.selectbox("ඉන්ධන වර්ගය:", ["Petrol 92", "Petrol 95", "Auto Diesel", "Super Diesel"])
+                    # Approximate standard prices per litre in LKR
+                    price_dict = {
+                        "Petrol 92": 370.0,
+                        "Petrol 95": 410.0,
+                        "Auto Diesel": 360.0,
+                        "Super Diesel": 410.0
+                    }
+                    unit_price = price_dict.get(fuel_type, 370.0)
+                    calculated_litres = cost / unit_price if unit_price > 0 else 0
+                    st.caption(f"💡 ඇස්තමේන්තුගත ලීටර් ප්‍රමාණය: **{calculated_litres:.2f} L** (මිල ලීටරයකට රු. {unit_price} ලෙස)")
+                    fuel_info = f" [{fuel_type}: {calculated_litres:.2f}L]"
+
+                details = st.text_input("අතිරේක විස්තර (අවශ්‍ය නම්):")
                 log_date = st.date_input("දිනය:")
                 
                 exp_submitted = st.form_submit_button("වියදම සුරකින්න")
                 if exp_submitted:
+                    final_details = details + fuel_info if category == "Fuel" else details
                     st.session_state.expenses.append({
                         "Vehicle": selected_vehicle,
                         "Category": category,
                         "Cost (LKR)": cost,
-                        "Details": details,
+                        "Details": final_details,
                         "Date": str(log_date)
                     })
                     st.success("දත්ත සාර්ථකව සුරකින ලදී!")
@@ -130,7 +147,6 @@ elif st.session_state.step == "app":
                 else:
                     st.info("මෙම වාහනය සඳහා තවම වියදම් ඇතුළත් කර නැත.")
             else:
-            
                 st.info("තවම කිසිදු වියදම් දත්තයක් ඇතුළත් කර නැත.")
     else:
         st.info("💡 කරුණාකර ඉහත පෝරමයෙන් ඔබගේ පළමු වාහනය එකතු කරන්න.")
