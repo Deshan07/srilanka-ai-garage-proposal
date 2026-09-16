@@ -9,15 +9,12 @@ st.set_page_config(
 )
 
 # --- Global Session State Initialization ---
-if "step" not in st.session_state:
-    st.session_state.step = "proposal"
 if "logged_in_user" not in st.session_state:
     st.session_state.logged_in_user = None
 
-# Users database structure: {username: {"password": str, "vehicles": [...], "expenses": [...]}}
+# Users database structure
 if "users_db" not in st.session_state:
     st.session_state.users_db = {
-        # පෙරනිමියෙන් රහස් Admin ගිණුමක් (අවශ්‍ය නම් මෙයින් පරීක්ෂා කළ හැක)
         "admin_boss": {
             "password": "supersecretpassword123", 
             "vehicles": ["ADMIN-CAR"], 
@@ -25,10 +22,21 @@ if "users_db" not in st.session_state:
         }
     }
 
+# Determine current step based on login status
+# පරිශීලකයා දැනටමත් ලොග් වී ඇත්නම්, App එක විවෘත කළ වහාම කෙළින්ම Dashboard වෙත යයි.
+if st.session_state.logged_in_user is not None:
+    current_step = "app_dashboard"
+else:
+    # පරිශීලකයා ලොග් වී නැත්නම්, පළමුව Proposal එකට හෝ Auth වෙත යනු ඇත (පෙරනිමියෙන් 'proposal' ලෙස පවත්වා ගනිමු)
+    if "step" not in st.session_state:
+        st.session_state.step = "proposal"
+    current_step = st.session_state.step
+
+
 # ==========================================
 # STEP 1: PROJECT PROPOSAL PAGE
 # ==========================================
-if st.session_state.step == "proposal":
+if current_step == "proposal":
     st.title("🚗 Sri Lanka AI Garage: Project Proposal")
     st.markdown("අපගේ ව්‍යාපෘතියේ ව්‍යාපාරික යෝජනාව (Proposal) පහත දැක්වේ:")
     st.markdown("---")
@@ -58,7 +66,7 @@ if st.session_state.step == "proposal":
 # ==========================================
 # STEP 2: USER AUTHENTICATION (Login / Sign Up)
 # ==========================================
-elif st.session_state.step == "auth":
+elif current_step == "auth":
     if st.button("⬅️ Back to Project Proposal"):
         st.session_state.step = "proposal"
         st.rerun()
@@ -78,7 +86,6 @@ elif st.session_state.step == "auth":
             if login_btn:
                 if login_user in st.session_state.users_db and st.session_state.users_db[login_user]["password"] == login_pass:
                     st.session_state.logged_in_user = login_user
-                    st.session_state.step = "app_dashboard"
                     st.success(f"සාර්ථකයි! සාදරයෙන් පිළිගනිමු, {login_user}!")
                     st.rerun()
                 else:
@@ -107,7 +114,7 @@ elif st.session_state.step == "auth":
 # ==========================================
 # STEP 3: MAIN APP MANAGEMENT PORTAL
 # ==========================================
-elif st.session_state.step == "app_dashboard":
+elif current_step == "app_dashboard":
     current_user = st.session_state.logged_in_user
     
     # Top bar with user greeting and logout
@@ -122,23 +129,32 @@ elif st.session_state.step == "app_dashboard":
 
     st.markdown("---")
 
-    # --- HIDDEN ADMIN PANEL (අනෙක් අයට නොපෙනෙන, ඔබට පමණක් පාලනය කළ හැකි කොටස) ---
-    # ඔබගේ පරිශීලක නම "admin_boss" නම් පමණක් මෙම රහස් පාලක පුවරුව දිස්වේ.
+    # --- ADMIN ONLY PANEL WITH USER SELECTOR ---
     if current_user == "admin_boss":
-        with st.expander("🛠️ [ADMIN ONLY] සියලුම පරිශීලක ගිණුම් සහ දත්ත පරීක්ෂා කිරීම"):
-            st.warning("⚠️ ඔබ විශේෂ පරිපාලක (Admin) බලතල යටතේ සිටී. මෙහි සියලු ගිණුම් දත්ත පෙනේ.")
-            for u_name, u_info in st.session_state.users_db.items():
-                st.markdown(f"👤 **පරිශීලකයා:** `{u_name}` | **මුරපදය:** `{u_info['password']}`")
-                st.write(f"🚗 වාහන: {u_info['vehicles']}")
-                st.write(f"💰 වියදම් ගණන: {len(u_info['expenses'])}")
-                st.markdown("---")
+        with st.expander("🛠️ [ADMIN PANEL] සියලුම පරිශීලක ගිණුම් පරීක්ෂා කිරීම", expanded=True):
+            st.warning("⚠️ ඔබ Admin බලතල යටතේ සිටී. පහත ලැයිස්තුවෙන් පරිශීලකයෙකු තෝරා ඔහුගේ විස්තර බලන්න:")
+            
+            all_users = list(st.session_state.users_db.keys())
+            selected_target_user = st.selectbox("පරිශීලකයන්ගේ ලැයිස්තුවෙන් කෙනෙක් තෝරන්න:", all_users)
+            
+            if selected_target_user:
+                t_info = st.session_state.users_db[selected_target_user]
+                st.markdown(f"### 👤 පරිශීලකයා: `{selected_target_user}`")
+                st.write(f"🔑 **මුරපදය:** `{t_info['password']}`")
+                st.write(f"🚗 **ලියාපදිංචි වාහන:** {t_info['vehicles']}")
+                
+                if len(t_info['expenses']) > 0:
+                    st.write("💰 **වියදම් විස්තර:**")
+                    st.dataframe(pd.DataFrame(t_info['expenses']), use_container_width=True)
+                else:
+                    st.info("මෙම පරිශීලකයා තවම වියදම් එකතු කර නැත.")
+            st.markdown("---")
 
-    # Get user specific data references
+    # Get user specific data references for regular usage
     user_data = st.session_state.users_db[current_user]
 
     st.subheader("🚗 1. නව වාහනයක් ලියාපදිංචි කිරීම හෝ මැකීම")
     
-    # Vehicle registration form
     with st.form("vehicle_form_center"):
         v_name = st.text_input("වාහන අංකය (උදා: WP CAB-1234):").upper()
         add_submitted = st.form_submit_button("වාහනය එකතු කරන්න")
@@ -162,9 +178,7 @@ elif st.session_state.step == "app_dashboard":
             del_v_btn = st.form_submit_button("තෝරාගත් වාහනය මකන්න")
             
             if del_v_btn:
-                # Remove vehicle from list
                 user_data["vehicles"].remove(del_vehicle)
-                # Also remove associated expenses for this vehicle
                 user_data["expenses"] = [exp for exp in user_data["expenses"] if exp["Vehicle"] != del_vehicle]
                 st.success(f"✅ '{del_vehicle}' වාහනය සහ එයට අදාළ දත්ත සාර්ථකව ඉවත් කරන ලදී!")
                 st.rerun()
@@ -217,15 +231,13 @@ elif st.session_state.step == "app_dashboard":
         with tab2:
             st.subheader(f"📊 {selected_vehicle} - වියදම් වාර්තාව සහ ඉවත් කිරීම")
             
-            # Filter expenses for selected vehicle
             v_expenses = [i for i, exp in enumerate(user_data["expenses"]) if exp["Vehicle"] == selected_vehicle]
             
             if len(v_expenses) > 0:
-                # Display table with index for identification
                 display_data = []
                 for idx in v_expenses:
                     item = user_data["expenses"][idx].copy()
-                    item["ID"] = idx  # Keep track of original index
+                    item["ID"] = idx
                     display_data.append(item)
                 
                 df = pd.DataFrame(display_data)
@@ -234,7 +246,6 @@ elif st.session_state.step == "app_dashboard":
                 
                 st.dataframe(df[["ID", "Category", "Cost (LKR)", "Details", "Date"]], use_container_width=True)
                 
-                # Delete specific expense entry form
                 st.markdown("##### 🗑️ නිශ්චිත වියදම් සටහනක් මකන්න")
                 with st.form("delete_expense_form"):
                     exp_to_del = st.selectbox("මකා දැමිය යුතු වියදමේ ID අංකය තෝරන්න:", v_expenses)
