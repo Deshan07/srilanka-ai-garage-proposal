@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 st.set_page_config(
     page_title="Sri Lanka AI Garage - Proposal & Manager",
     page_icon="🚗",
-    layout="wide"
+    layout="centered"
 )
 
-# --- Session State for Step Navigation & App Data ---
+# --- Session State Initialization ---
 if "step" not in st.session_state:
     st.session_state.step = "proposal"
 if "vehicles" not in st.session_state:
@@ -44,13 +44,9 @@ if st.session_state.step == "proposal":
 
     # Folder / Expander 3: Expected Benefits
     with st.expander("💡 3. අපේක්ෂිත ප්‍රතිලාභ (Expected Benefits)"):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.info("**මූල්‍ය පාලනය**\n\nමාසිකව වාහනය සඳහා වැයවන මුදල් පිළිබඳ පැහැදිලි චිත්‍රයක් ලබා ගැනීම.")
-        with col2:
-            st.info("**කාලය ඉතිරිකිරීම**\n\nසේවා කළ යුතු දින සහ බලපත්‍ර අලුත් කළ යුතු දින කලින්ම දැන ගැනීම.")
-        with col3:
-            st.info("**විනිවිදභාවය**\n\nසියලුම වාහන දත්ත එකම තැනක සුරක්ෂිතව තබා ගැනීම.")
+        st.info("**මූල්‍ය පාලනය:** මාසිකව වාහනය සඳහා වැයවන මුදල් පිළිබඳ පැහැදිලි චිත්‍රයක් ලබා ගැනීම.")
+        st.info("**කාලය ඉතිරිකිරීම:** සේවා කළ යුතු දින සහ බලපත්‍ර අලුත් කළ යුතු දින කලින්ම දැන ගැනීම.")
+        st.info("**විනිවිදභාවය:** සියලුම වාහන දත්ත එකම තැනක සුරක්ෂිතව තබා ගැනීම.")
 
     # Folder / Expander 4: Contact & Social Media
     with st.expander("🌐 4. සම්බන්ධ වීමට සහ අනුග්‍රහය දැක්වීමට (Contact & Sponsorship)"):
@@ -61,14 +57,12 @@ if st.session_state.step == "proposal":
     st.markdown("---")
     
     # Next Button to go to the App
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("Next ➡️ (Go to Vehicle App Dashboard)", use_container_width=True, type="primary"):
-            st.session_state.step = "app"
-            st.rerun()
+    if st.button("Next ➡️ (Go to Vehicle App Dashboard)", use_container_width=True, type="primary"):
+        st.session_state.step = "app"
+        st.rerun()
 
 # ==========================================
-# STEP 2: APP DASHBOARD & MANAGEMENT SECTION
+# STEP 2: APP MANAGEMENT PORTAL (Center Flow)
 # ==========================================
 elif st.session_state.step == "app":
     # Back button to return to Proposal
@@ -79,53 +73,39 @@ elif st.session_state.step == "app":
     st.title("🚗 Sri Lanka AI Garage: Management Portal")
     st.markdown("---")
 
-    # If no vehicles registered yet, show Add Vehicle form directly in the center
-    if len(st.session_state.vehicles) == 0:
-        st.warning("⚠️ කරුණාකර ඔබගේ පළමු වාහනය මෙහි පහතින් ලියාපදිංචි කරන්න:")
-        with st.form("initial_vehicle_form"):
-            v_name = st.text_input("වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
-            v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
-            submitted = st.form_submit_button("වාහනය එකතු කරන්න")
-            
-            if submitted and v_name.strip() != "":
+    # 1. Add Vehicle Section (Always visible at the top if needed, or managed centrally)
+    st.subheader("🚗 1. වාහනයක් ලියාපදිංචි කිරීම / තෝරා ගැනීම")
+    
+    with st.form("vehicle_form_center"):
+        v_name = st.text_input("새로운 වාහනයේ නම / අංකය (උදා: WP CAB-1234):")
+        v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
+        add_submitted = st.form_submit_button("වාහනය එකතු කරන්න")
+        
+        if add_submitted and v_name.strip() != "":
+            if v_name not in st.session_state.vehicles:
                 st.session_state.vehicles.append(v_name)
-                st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී! ඇප් එක ක්‍රියාත්මක වේ...")
-                st.rerun()
-    else:
-        # --- Sidebar Menu for App (Once vehicle exists) ---
-        st.sidebar.header("📂 ඇප් මෙනුව (App Navigation)")
-        menu = st.sidebar.selectbox(
-            "පිටුව තෝරන්න:", 
-            ["📊 Vehicle Expense Dashboard", "➕ Add Another Vehicle", "⛽ Add Fuel/Service Log"]
-        )
+                st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී!")
+            else:
+                st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
 
-        # 1. Add Another Vehicle Section
-        if menu == "➕ Add Another Vehicle":
-            st.subheader("🚗 තවත් වාහනයක් එකතු කිරීම")
-            with st.form("vehicle_form_extra"):
-                v_name = st.text_input("වාහනයේ නම / අංකය:")
-                v_type = st.selectbox("වාහන වර්ගය:", ["Car", "SUV", "Bike", "Three-Wheeler", "Van"])
-                submitted = st.form_submit_button("වාහනය එකතු කරන්න")
-                
-                if submitted and v_name.strip() != "":
-                    if v_name not in st.session_state.vehicles:
-                        st.session_state.vehicles.append(v_name)
-                        st.success(f"'{v_name}' සාර්ථකව එකතු කරන ලදී!")
-                    else:
-                        st.warning("මෙම වාහනය දැනටමත් ලියාපදිංචි කර ඇත.")
+    # If vehicles exist, show selection and management in the center
+    if len(st.session_state.vehicles) > 0:
+        st.markdown("---")
+        st.subheader("⚙️ 2. වාහනය තෝරා දත්ත ඇතුළත් කිරීම")
+        
+        selected_vehicle = st.selectbox("පාලනය කිරීමට අවශ්‍ය වාහනය තෝරන්න:", st.session_state.vehicles)
 
-        selected_vehicle = st.sidebar.selectbox("වාහනය තෝරන්න:", st.session_state.vehicles)
-
-        # 2. Add Fuel / Expense Log
-        if menu == "⛽ Add Fuel/Service Log":
-            st.subheader(f"⛽ {selected_vehicle} - දත්ත ඇතුළත් කිරීම")
-            with st.form("expense_form"):
-                category = st.selectbox("වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
+        # Tabs or sections for actions
+        action_choice = st.radio("කරަން අවශ්‍ය දේ තෝරන්න:", ["⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)", "📊 වියදම් සාරාංශය බලන්න (Dashboard)"])
+        
+        if action_choice == "⛽ ඉන්ධන හෝ සේවා වියදම් ඇතුළත් කරන්න (Add Expense)":
+            with st.form("expense_form_center"):
+                category = st.selectbox("වියදම් වර්ගය:", ["Fuel", "Full Service", "Tyre Change", "Repairs", "Other"])
                 cost = st.number_input("මුළු මුදල (LKR):", min_value=0.0, value=2500.0)
-                details = st.text_input("විස්තර:")
+                details = st.text_input("විස්තර (උදා: ලීටර් 15 / ඔයිල් මාරු කළා):")
                 log_date = st.date_input("දිනය:")
                 
-                exp_submitted = st.form_submit_button("දත්ත සුරකින්න")
+                exp_submitted = st.form_submit_button("වියදම සුරකින්න")
                 if exp_submitted:
                     st.session_state.expenses.append({
                         "Vehicle": selected_vehicle,
@@ -135,10 +115,9 @@ elif st.session_state.step == "app":
                         "Date": str(log_date)
                     })
                     st.success("දත්ත සාර්ථකව සුරකින ලදී!")
-
-        # 3. Dashboard Section
-        elif menu == "📊 Vehicle Expense Dashboard" or menu == "➕ Add Another Vehicle":
-            st.subheader(f"📊 {selected_vehicle} - වියදම් සාරාංශය")
+                    
+        elif action_choice == "📊 වියදම් සාරාංශය බලන්න (Dashboard)":
+            st.markdown(f"### 📊 {selected_vehicle} - වියදම් වාර්තාව")
             
             if len(st.session_state.expenses) > 0:
                 df = pd.DataFrame(st.session_state.expenses)
@@ -146,9 +125,12 @@ elif st.session_state.step == "app":
                 
                 if not v_df.empty:
                     total_spent = v_df["Cost (LKR)"].sum()
-                    st.metric(label="මුළු වියදම", value=f"Rs. {total_spent:,.2f}")
+                    st.metric(label="මෙම වාහනය සඳහා දැරූ මුළු වියදම", value=f"Rs. {total_spent:,.2f}")
                     st.dataframe(v_df, use_container_width=True)
                 else:
                     st.info("මෙම වාහනය සඳහා තවම වියදම් ඇතුළත් කර නැත.")
             else:
-                st.info("තවම කිසිදු දත්තයක් ඇතුළත් කර නැත. වම්පස මෙනුවෙන් 'Add Fuel/Service Log' වෙත ගොස් වියදම් එකතු කරන්න.")
+            
+                st.info("තවම කිසිදු වියදම් දත්තයක් ඇතුළත් කර නැත.")
+    else:
+        st.info("💡 කරුණාකර ඉහත පෝරමයෙන් ඔබගේ පළමු වාහනය එකතු කරන්න.")
