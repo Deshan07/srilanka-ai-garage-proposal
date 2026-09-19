@@ -5,7 +5,7 @@ import time
 
 # Page Configuration
 st.set_page_config(
-    page_title="Sri Lanka AI Garage - Manager",
+    page_title="Lanka Drive Manager",
     page_icon="🚗",
     layout="centered"
 )
